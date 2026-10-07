@@ -1,1 +1,1451 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三角関数グラフ学習ツール</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- KaTeX for math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        .katex-display {
+            margin: 0.2em 0 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col selection:bg-indigo-100">
 
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900/90 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl border border-slate-700 transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center gap-2">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-msg">保存しました</span>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 py-3 px-6 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-md shadow-indigo-500/20">
+                    <i class="fa-solid fa-wave-square text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-wide text-slate-900">三角関数グラフ学習ツール</h1>
+                    <p class="text-xs text-slate-500">Transformations & Unit Circle Visualization</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Angle Unit Selector -->
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
+                    <button id="btn-unit-rad" onclick="setAngleUnit('rad')" class="px-3 py-1.5 rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm border border-slate-200">
+                        弧度法 (rad)
+                    </button>
+                    <button id="btn-unit-deg" onclick="setAngleUnit('deg')" class="px-3 py-1.5 rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        度数法 (°)
+                    </button>
+                </div>
+
+                <!-- Function Selector -->
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    <button id="btn-sin" onclick="setFunction('sin')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-indigo-600 text-white shadow-sm">
+                        y = sin(x)
+                    </button>
+                    <button id="btn-cos" onclick="setFunction('cos')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        y = cos(x)
+                    </button>
+                    <button id="btn-tan" onclick="setFunction('tan')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        y = tan(x)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col gap-5">
+        
+        <!-- SECTION 1: CANVAS CONTAINER (UNIT CIRCLE + GRAPH) -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col relative">
+            
+            <!-- Canvas Controls Bar -->
+            <div class="flex flex-wrap justify-between items-center gap-2 mb-2 px-1">
+                <div class="flex flex-wrap items-center gap-3 text-xs">
+                    <label class="flex items-center gap-1.5 text-slate-700 cursor-pointer select-none">
+                        <input type="checkbox" id="chk-circle" checked onchange="toggleUnitCirclePanel()" class="rounded bg-slate-100 border-slate-300 text-indigo-600 focus:ring-0">
+                        <span>単位円</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 text-slate-700 cursor-pointer select-none">
+                        <input type="checkbox" id="chk-special-angles" checked onchange="drawAll()" class="rounded bg-slate-100 border-slate-300 text-indigo-600 focus:ring-0">
+                        <span>★ 有名角目盛り</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 text-slate-700 cursor-pointer select-none">
+                        <input type="checkbox" id="chk-guides" checked onchange="drawAll()" class="rounded bg-slate-100 border-slate-300 text-indigo-600 focus:ring-0">
+                        <span>補助線</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 text-slate-700 cursor-pointer select-none">
+                        <input type="checkbox" id="chk-base-sin" onchange="drawAll()" class="rounded bg-slate-100 border-slate-300 text-indigo-600 focus:ring-0">
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 bg-blue-600 border border-dashed border-blue-600"></span> y = sin x</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 text-slate-700 cursor-pointer select-none">
+                        <input type="checkbox" id="chk-base-cos" onchange="drawAll()" class="rounded bg-slate-100 border-slate-300 text-indigo-600 focus:ring-0">
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 bg-emerald-600 border border-dashed border-emerald-600"></span> y = cos x</span>
+                    </label>
+                    <span class="text-slate-300 hidden lg:inline">|</span>
+                    <span class="text-slate-500 text-[11px] hidden lg:inline"><i class="fa-solid fa-hand-pointer text-indigo-500 mr-1"></i>ホイールで拡大縮小 / ドラッグ移動</span>
+                </div>
+
+                <!-- Zoom & Animation Controls -->
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+                        <button onclick="zoom(1.2)" title="拡大" class="p-1 px-2.5 text-slate-600 hover:text-indigo-600 hover:bg-white rounded transition-colors text-xs font-bold">
+                            <i class="fa-solid fa-magnifying-glass-plus"></i>
+                        </button>
+                        <button onclick="zoom(0.8)" title="縮小" class="p-1 px-2.5 text-slate-600 hover:text-indigo-600 hover:bg-white rounded transition-colors text-xs font-bold">
+                            <i class="fa-solid fa-magnifying-glass-minus"></i>
+                        </button>
+                        <button onclick="resetView()" title="表示位置リセット" class="p-1 px-2 text-slate-600 hover:text-indigo-600 hover:bg-white rounded transition-colors text-xs">
+                            <i class="fa-solid fa-arrows-rotate"></i> リセット
+                        </button>
+                    </div>
+
+                    <button id="btn-animate" onclick="toggleAnimation()" class="px-3 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                        <i class="fa-solid fa-play" id="icon-animate"></i> アニメーション
+                    </button>
+                </div>
+            </div>
+
+            <!-- Responsive Dual-Canvas Grid -->
+            <div class="flex flex-col md:flex-row gap-3 items-stretch w-full min-h-[220px] md:min-h-[250px]">
+                
+                <!-- Unit Circle Canvas Container -->
+                <div id="unit-circle-container" class="relative w-full md:w-[220px] h-[180px] md:h-auto bg-slate-50 rounded-xl overflow-hidden border border-slate-200 flex-shrink-0 flex items-center justify-center">
+                    <canvas id="circleCanvas" class="w-full h-full block select-none cursor-grab active:cursor-grabbing"></canvas>
+                    <div class="absolute top-2 left-2 bg-white/80 backdrop-blur-sm px-2 py-0.5 rounded text-[11px] font-bold text-slate-600 border border-slate-200 pointer-events-none">
+                        単位円 (ドラッグで回転)
+                    </div>
+                    <!-- 0° リセットボタン -->
+                    <button onclick="resetCircleAngle()" title="角度を 0° (0 rad) に戻す" class="absolute top-2 right-2 bg-white/90 hover:bg-indigo-50 text-indigo-700 text-[11px] font-bold px-2 py-0.5 rounded-lg border border-slate-200 shadow-sm transition-all flex items-center gap-1 active:scale-95">
+                        <i class="fa-solid fa-rotate-left text-[10px]"></i> 0°
+                    </button>
+                </div>
+
+                <!-- Main Graph Canvas Container -->
+                <div class="relative flex-1 min-w-0 h-[220px] md:h-[250px] bg-white rounded-xl overflow-hidden border border-slate-200 select-none" id="graph-container">
+                    <canvas id="graphCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+                    
+                    <!-- Floating Tooltip -->
+                    <div id="tooltip" class="absolute hidden bg-slate-900/90 text-xs text-white border border-slate-700 px-2.5 py-1 rounded-md shadow-xl pointer-events-none font-mono z-10"></div>
+                </div>
+            </div>
+
+            <!-- Footer Legend -->
+            <div class="mt-2.5 flex flex-wrap items-center justify-between text-xs text-slate-500 px-1 gap-2">
+                <div class="flex items-center gap-4">
+                    <span class="flex items-center gap-1.5"><span class="w-3 h-1 rounded-full bg-indigo-600"></span> 変形後のグラフ</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-slate-400"></span> 基準のグラフ</span>
+                    <span id="legend-dot" class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span> 連動動点</span>
+                </div>
+                <button onclick="setZoom100()" title="クリックで倍率100%にリセット" class="font-mono text-slate-600 hover:text-indigo-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-2 py-0.5 rounded text-[11px] transition-colors flex items-center gap-1 font-semibold">
+                    <i class="fa-solid fa-expand text-[10px]"></i> <span id="zoom-indicator">倍率: 200%</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 2: CONTROLS & DYNAMIC EQUATION DISPLAY -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            
+            <!-- Left Side: Sliders -->
+            <div class="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                <div class="flex flex-wrap justify-between items-center gap-2 mb-3 pb-2 border-b border-slate-200">
+                    <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-indigo-600"></i> 変形パラメータ設定
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <button onclick="saveCurrentAsDefault()" title="現在のグラフやパラメータの状態を初期設定として保存します" class="text-xs text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 font-semibold">
+                            <i class="fa-solid fa-bookmark text-indigo-500"></i> 今の状態で初期値保存
+                        </button>
+                        <button onclick="resetParameters()" title="初期設定に戻します" class="text-xs text-slate-600 hover:text-indigo-600 transition-colors flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-md">
+                            <i class="fa-solid fa-rotate-left"></i> リセット
+                        </button>
+                        <button id="btn-clear-default" onclick="clearCustomDefault()" title="標準の初期値(y=sinx)に戻します" class="hidden text-xs text-rose-600 hover:text-rose-700 underline transition-colors px-1 py-1">
+                            初期値を標準に戻す
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Formula Reference -->
+                <div class="mb-4 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center flex items-center justify-center gap-3">
+                    <span class="text-xs text-slate-500 font-medium">標準形:</span>
+                    <div id="standard-template-math" class="text-indigo-700 font-serif"></div>
+                </div>
+
+                <!-- Sliders Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Amplitude (a) -->
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 振幅・倍率 <span class="font-mono text-emerald-600 font-bold">(a)</span>
+                            </label>
+                            <span id="val-a" class="font-mono text-xs text-emerald-600 font-bold bg-white px-2 py-0.5 rounded border border-slate-200">1.0</span>
+                        </div>
+                        <input type="range" id="slider-a" min="-4" max="4" step="0.1" value="1" oninput="updateValues()"
+                            class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                    </div>
+
+                    <!-- Frequency/Period (b) -->
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span> 周期倍率 <span class="font-mono text-amber-600 font-bold">(b)</span>
+                            </label>
+                            <span id="val-b" class="font-mono text-xs text-amber-600 font-bold bg-white px-2 py-0.5 rounded border border-slate-200">1.0</span>
+                        </div>
+                        <input type="range" id="slider-b" min="-4" max="4" step="0.25" value="1" oninput="updateValues()"
+                            class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-600">
+                    </div>
+
+                    <!-- Phase Shift (c) -->
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-cyan-500"></span> x軸方向平行移動 <span class="font-mono text-cyan-600 font-bold">(c)</span>
+                            </label>
+                            <span id="val-c" class="font-mono text-xs text-cyan-600 font-bold bg-white px-2 py-0.5 rounded border border-slate-200">0</span>
+                        </div>
+                        <input type="range" id="slider-c" min="-3.14159" max="3.14159" step="0.261799" value="0" oninput="updateValues()"
+                            class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600">
+                    </div>
+
+                    <!-- Vertical Shift (d) -->
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-rose-500"></span> y軸方向平行移動 <span class="font-mono text-rose-600 font-bold">(d)</span>
+                            </label>
+                            <span id="val-d" class="font-mono text-xs text-rose-600 font-bold bg-white px-2 py-0.5 rounded border border-slate-200">0.0</span>
+                        </div>
+                        <input type="range" id="slider-d" min="-3" max="3" step="0.25" value="0" oninput="updateValues()"
+                            class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-600">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Dynamic Formula Display & Properties -->
+            <div class="lg:col-span-5 flex flex-col gap-4">
+                
+                <!-- Formula Box -->
+                <div class="bg-gradient-to-br from-indigo-50/90 via-white to-white border-2 border-indigo-200 rounded-2xl p-4 shadow-sm relative overflow-hidden flex-1 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xs font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+                                <i class="fa-solid fa-square-root-variable"></i> 現在の表示式
+                            </span>
+                            <span class="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full border border-indigo-200 font-medium">リアルタイム同期</span>
+                        </div>
+
+                        <!-- Main LaTeX Equation -->
+                        <div class="bg-slate-50 rounded-xl p-3 my-1.5 border border-slate-200 flex items-center justify-center min-h-[64px] shadow-inner">
+                            <div id="current-equation-katex" class="text-lg md:text-xl text-slate-900 font-serif overflow-x-auto py-0.5 max-w-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- Expanded Latex Form -->
+                    <div class="pt-2 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
+                        <span>展開形:</span>
+                        <div id="expanded-equation-katex" class="font-mono text-slate-700"></div>
+                    </div>
+                </div>
+
+                <!-- Properties Matrix -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm grid grid-cols-4 gap-2 text-center">
+                    <div class="bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <span class="text-[11px] text-slate-500 block mb-0.5">周期 (T)</span>
+                        <span id="prop-period" class="font-mono font-bold text-amber-600 text-sm">2π</span>
+                    </div>
+                    <div class="bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <span class="text-[11px] text-slate-500 block mb-0.5">振幅 (|a|)</span>
+                        <span id="prop-amplitude" class="font-mono font-bold text-emerald-600 text-sm">1</span>
+                    </div>
+                    <div class="bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <span class="text-[11px] text-slate-500 block mb-0.5">最大値</span>
+                        <span id="prop-max" class="font-mono font-bold text-indigo-600 text-sm">1</span>
+                    </div>
+                    <div class="bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <span class="text-[11px] text-slate-500 block mb-0.5">最小値</span>
+                        <span id="prop-min" class="font-mono font-bold text-indigo-600 text-sm">-1</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Core State Variables
+        let currentFn = 'sin';
+        let angleUnit = 'rad'; // 'rad' or 'deg'
+        let showCircle = true;
+
+        let a = 1.0;
+        let b = 1.0;
+        let c = 0.0;
+        let d = 0.0;
+
+        // Animation Position (x coordinate in math space)
+        let animX = 0.0;
+
+        let graphCanvas, graphCtx;
+        let circleCanvas, circleCtx;
+        let isAnimating = false;
+        let animFrameId = null;
+
+        // Mouse Drag State Variables
+        let isDragging = false;
+        let isGraphDotDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+
+        // Circle Dragging State
+        let isCircleDragging = false;
+
+        // Viewport Pan & Zoom State (Default 200% zoom, x-start at -100° / -5π/9 rad)
+        let zoomLevel = 2.0;
+        let offsetX = -(5 * Math.PI) / 9;
+        let offsetY = 0.0;
+
+        // Standard Factory Default Configuration
+        const FACTORY_DEFAULTS = {
+            a: 1.0,
+            b: 1.0,
+            c: 0.0,
+            d: 0.0,
+            fn: 'sin',
+            angleUnit: 'rad',
+            showCircle: true,
+            showSpecialAngles: true,
+            showBaseSin: false,
+            showBaseCos: false,
+            showGuides: true,
+            zoomLevel: 2.0,
+            offsetX: -(35 * Math.PI) / 18, // 画面左端が正確に -100° (-5π/9 rad) からスタートするオフセット値
+            offsetY: 0.0
+        };
+
+        function getSavedDefaults() {
+            try {
+                const saved = localStorage.getItem('trig_custom_defaults');
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+            } catch (e) {
+                console.error('Failed to load defaults from localStorage:', e);
+            }
+            return FACTORY_DEFAULTS;
+        }
+
+        function getVisibleXBounds() {
+            const spanX = (angleUnit === 'rad' ? 10 * Math.PI : 1800) / zoomLevel;
+            const xMin = -spanX / 2 - offsetX;
+            const xMax = spanX / 2 - offsetX;
+            return { xMin, xMax };
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            graphCanvas = document.getElementById('graphCanvas');
+            graphCtx = graphCanvas.getContext('2d');
+
+            circleCanvas = document.getElementById('circleCanvas');
+            circleCtx = circleCanvas.getContext('2d');
+
+            window.addEventListener('resize', resizeCanvases);
+            
+            setupGraphInteraction();
+            setupCircleInteraction();
+            
+            applyState(getSavedDefaults());
+            updateSaveDefaultButtonState();
+
+            resizeCanvases();
+        });
+
+        function setAngleUnit(unit) {
+            if (angleUnit === unit) return;
+            const oldUnit = angleUnit;
+            angleUnit = unit;
+            
+            if (oldUnit === 'rad' && unit === 'deg') {
+                offsetX = offsetX * (180 / Math.PI);
+                animX = animX * (180 / Math.PI);
+                c = c * (180 / Math.PI);
+            } else if (oldUnit === 'deg' && unit === 'rad') {
+                offsetX = offsetX * (Math.PI / 180);
+                animX = animX * (Math.PI / 180);
+                c = c * (Math.PI / 180);
+            }
+
+            const sliderC = document.getElementById('slider-c');
+            if (sliderC) {
+                if (angleUnit === 'rad') {
+                    sliderC.min = -Math.PI; sliderC.max = Math.PI; sliderC.step = Math.PI / 12;
+                } else {
+                    sliderC.min = -180; sliderC.max = 180; sliderC.step = 15;
+                }
+                sliderC.value = c;
+            }
+
+            const chkCircle = document.getElementById('chk-circle');
+            const chkBaseSin = document.getElementById('chk-base-sin');
+            const chkBaseCos = document.getElementById('chk-base-cos');
+            const chkSpecial = document.getElementById('chk-special-angles');
+            const chkGuides = document.getElementById('chk-guides');
+
+            applyState({
+                a, b, c, d, fn: currentFn, angleUnit,
+                showCircle: chkCircle ? chkCircle.checked : true,
+                showBaseSin: chkBaseSin ? chkBaseSin.checked : false,
+                showBaseCos: chkBaseCos ? chkBaseCos.checked : false,
+                showSpecialAngles: chkSpecial ? chkSpecial.checked : true,
+                showGuides: chkGuides ? chkGuides.checked : true,
+                zoomLevel, offsetX, offsetY
+            });
+        }
+
+        function setFunction(fn) {
+            currentFn = fn;
+            const chkCircle = document.getElementById('chk-circle');
+            const chkBaseSin = document.getElementById('chk-base-sin');
+            const chkBaseCos = document.getElementById('chk-base-cos');
+            const chkSpecial = document.getElementById('chk-special-angles');
+            const chkGuides = document.getElementById('chk-guides');
+
+            applyState({
+                a, b, c, d, fn: currentFn, angleUnit,
+                showCircle: chkCircle ? chkCircle.checked : true,
+                showBaseSin: chkBaseSin ? chkBaseSin.checked : false,
+                showBaseCos: chkBaseCos ? chkBaseCos.checked : false,
+                showSpecialAngles: chkSpecial ? chkSpecial.checked : true,
+                showGuides: chkGuides ? chkGuides.checked : true,
+                zoomLevel, offsetX, offsetY
+            });
+        }
+
+        function toggleUnitCirclePanel() {
+            const chkCircle = document.getElementById('chk-circle');
+            showCircle = chkCircle ? chkCircle.checked : true;
+            const container = document.getElementById('unit-circle-container');
+            const dotLegend = document.getElementById('legend-dot');
+            
+            if (container) {
+                if (showCircle) {
+                    container.classList.remove('hidden');
+                    if (dotLegend) dotLegend.classList.remove('hidden');
+                } else {
+                    container.classList.add('hidden');
+                    if (dotLegend) dotLegend.classList.add('hidden');
+                }
+            }
+            resizeCanvases();
+        }
+
+        function applyZoom(factor) {
+            zoomLevel = Math.min(Math.max(zoomLevel * factor, 0.2), 10.0);
+            document.getElementById('zoom-indicator').textContent = `倍率: ${Math.round(zoomLevel * 100)}%`;
+            drawAll();
+        }
+
+        function zoom(factor) {
+            applyZoom(factor);
+        }
+
+        function resetView() {
+            zoomLevel = 2.0;
+            offsetX = angleUnit === 'rad' ? -(35 * Math.PI) / 18 : -350.0;
+            offsetY = 0.0;
+            document.getElementById('zoom-indicator').textContent = `倍率: ${Math.round(zoomLevel * 100)}%`;
+            drawAll();
+        }
+
+        function setZoom100() {
+            zoomLevel = 1.0;
+            offsetX = 0.0;
+            offsetY = 0.0;
+            document.getElementById('zoom-indicator').textContent = `倍率: 100%`;
+            drawAll();
+        }
+
+        function applyState(state) {
+            angleUnit = state.angleUnit || 'rad';
+            currentFn = state.fn || 'sin';
+
+            const btnRad = document.getElementById('btn-unit-rad');
+            if (btnRad) {
+                btnRad.className = angleUnit === 'rad' 
+                    ? "px-3 py-1.5 rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm border border-slate-200"
+                    : "px-3 py-1.5 rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900";
+            }
+            const btnDeg = document.getElementById('btn-unit-deg');
+            if (btnDeg) {
+                btnDeg.className = angleUnit === 'deg'
+                    ? "px-3 py-1.5 rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm border border-slate-200"
+                    : "px-3 py-1.5 rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900";
+            }
+
+            ['sin', 'cos', 'tan'].forEach(f => {
+                const btn = document.getElementById(`btn-${f}`);
+                if (btn) {
+                    btn.className = f === currentFn
+                        ? "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-indigo-600 text-white shadow-sm"
+                        : "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-slate-900";
+                }
+            });
+
+            a = state.a ?? 1.0;
+            b = state.b ?? 1.0;
+            c = state.c ?? 0.0;
+            d = state.d ?? 0.0;
+
+            const sliderA = document.getElementById('slider-a');
+            if (sliderA) sliderA.value = a;
+            const sliderB = document.getElementById('slider-b');
+            if (sliderB) sliderB.value = b;
+            
+            const sliderC = document.getElementById('slider-c');
+            if (sliderC) {
+                if (angleUnit === 'rad') {
+                    sliderC.min = -Math.PI; sliderC.max = Math.PI; sliderC.step = Math.PI / 12;
+                } else {
+                    sliderC.min = -180; sliderC.max = 180; sliderC.step = 15;
+                }
+                sliderC.value = c;
+            }
+
+            const sliderD = document.getElementById('slider-d');
+            if (sliderD) sliderD.value = d;
+
+            const chkCircle = document.getElementById('chk-circle');
+            if (chkCircle) chkCircle.checked = state.showCircle ?? true;
+
+            const chkSpecial = document.getElementById('chk-special-angles');
+            if (chkSpecial) chkSpecial.checked = state.showSpecialAngles ?? true;
+            
+            const chkBaseSin = document.getElementById('chk-base-sin');
+            if (chkBaseSin) chkBaseSin.checked = state.showBaseSin ?? false;
+
+            const chkBaseCos = document.getElementById('chk-base-cos');
+            if (chkBaseCos) chkBaseCos.checked = state.showBaseCos ?? false;
+
+            const chkGuides = document.getElementById('chk-guides');
+            if (chkGuides) chkGuides.checked = state.showGuides ?? true;
+
+            zoomLevel = state.zoomLevel ?? 2.0;
+            offsetX = state.offsetX ?? (angleUnit === 'rad' ? -(35 * Math.PI) / 18 : -350.0);
+            offsetY = state.offsetY ?? 0.0;
+
+            const zoomInd = document.getElementById('zoom-indicator');
+            if (zoomInd) zoomInd.textContent = `倍率: ${Math.round(zoomLevel * 100)}%`;
+
+            toggleUnitCirclePanel();
+            updateValues();
+        }
+
+        function saveCurrentAsDefault() {
+            const chkCircle = document.getElementById('chk-circle');
+            const customState = {
+                a: a,
+                b: b,
+                c: c,
+                d: d,
+                fn: currentFn,
+                angleUnit: angleUnit,
+                showCircle: chkCircle ? chkCircle.checked : true,
+                showSpecialAngles: document.getElementById('chk-special-angles') ? document.getElementById('chk-special-angles').checked : true,
+                showBaseSin: document.getElementById('chk-base-sin') ? document.getElementById('chk-base-sin').checked : false,
+                showBaseCos: document.getElementById('chk-base-cos') ? document.getElementById('chk-base-cos').checked : false,
+                showGuides: document.getElementById('chk-guides') ? document.getElementById('chk-guides').checked : true,
+                zoomLevel: zoomLevel,
+                offsetX: offsetX,
+                offsetY: offsetY
+            };
+            try {
+                localStorage.setItem('trig_custom_defaults', JSON.stringify(customState));
+                showToast('現在のグラフ状態を初期設定として記憶しました！');
+                updateSaveDefaultButtonState();
+            } catch (e) {
+                showToast('保存に失敗しました');
+            }
+        }
+
+        function clearCustomDefault() {
+            localStorage.removeItem('trig_custom_defaults');
+            applyState(FACTORY_DEFAULTS);
+            updateSaveDefaultButtonState();
+            showToast('初期設定を標準に戻しました');
+        }
+
+        function updateSaveDefaultButtonState() {
+            const hasCustom = !!localStorage.getItem('trig_custom_defaults');
+            const clearBtn = document.getElementById('btn-clear-default');
+            if (clearBtn) {
+                if (hasCustom) clearBtn.classList.remove('hidden');
+                else clearBtn.classList.add('hidden');
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.textContent = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+
+        function resizeCanvases() {
+            const dpr = window.devicePixelRatio || 1;
+
+            const gContainer = document.getElementById('graph-container');
+            const gRect = gContainer.getBoundingClientRect();
+            graphCanvas.width = gRect.width * dpr;
+            graphCanvas.height = gRect.height * dpr;
+            graphCtx.scale(dpr, dpr);
+
+            const cContainer = document.getElementById('unit-circle-container');
+            const cRect = cContainer.getBoundingClientRect();
+            circleCanvas.width = cRect.width * dpr;
+            circleCanvas.height = cRect.height * dpr;
+            circleCtx.scale(dpr, dpr);
+
+            drawAll();
+        }
+
+        function setupGraphInteraction() {
+            graphCanvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = e.deltaY < 0 ? 1.12 : 0.88;
+                applyZoom(zoomFactor);
+            }, { passive: false });
+
+            function getGraphPointPos() {
+                const container = document.getElementById('graph-container');
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+                const { xMin, xMax } = getVisibleXBounds();
+                const spanY = 10 / zoomLevel;
+                const yMin = -spanY / 2 + offsetY;
+                const yMax = spanY / 2 + offsetY;
+
+                const ptY = evalTransformedFn(animX);
+                const ptSX = ((animX - xMin) / (xMax - xMin)) * width;
+                const ptSY = height - ((ptY - yMin) / (yMax - yMin)) * height;
+                return { ptSX, ptSY, width, height, xMin, xMax };
+            }
+
+            function tryStartDotDrag(clientX, clientY) {
+                if (!showCircle) return false;
+                const rect = graphCanvas.getBoundingClientRect();
+                const mx = clientX - rect.left;
+                const my = clientY - rect.top;
+
+                const { ptSX, ptSY, width, xMin, xMax } = getGraphPointPos();
+
+                const dist = Math.hypot(mx - ptSX, my - ptSY);
+                if (dist < 22 || Math.abs(mx - ptSX) < 12) {
+                    isGraphDotDragging = true;
+                    if (isAnimating) toggleAnimation();
+                    animX = xMin + (mx / width) * (xMax - xMin);
+                    drawAll();
+                    return true;
+                }
+                return false;
+            }
+
+            function handleMoveDot(clientX) {
+                if (!isGraphDotDragging) return;
+                const rect = graphCanvas.getBoundingClientRect();
+                const mx = clientX - rect.left;
+                const { width, xMin, xMax } = getGraphPointPos();
+
+                animX = xMin + (mx / width) * (xMax - xMin);
+                drawAll();
+            }
+
+            graphCanvas.addEventListener('mousedown', (e) => {
+                if (tryStartDotDrag(e.clientX, e.clientY)) {
+                    return;
+                }
+                isDragging = true;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                graphCanvas.classList.remove('cursor-grab');
+                graphCanvas.classList.add('cursor-grabbing');
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isGraphDotDragging) {
+                    handleMoveDot(e.clientX);
+                    return;
+                }
+
+                if (isDragging) {
+                    const container = document.getElementById('graph-container');
+                    const width = container.clientWidth;
+                    const height = container.clientHeight;
+
+                    const dx = e.clientX - dragStartX;
+                    const dy = e.clientY - dragStartY;
+
+                    dragStartX = e.clientX;
+                    dragStartY = e.clientY;
+
+                    const baseSpanX = (angleUnit === 'rad' ? 10 * Math.PI : 1800) / zoomLevel;
+                    const baseSpanY = 10 / zoomLevel;
+
+                    offsetX += (dx / width) * baseSpanX;
+                    offsetY += (dy / height) * baseSpanY;
+
+                    drawAll();
+                } else {
+                    handleHoverTooltip(e);
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isGraphDotDragging) {
+                    isGraphDotDragging = false;
+                }
+                if (isDragging) {
+                    isDragging = false;
+                    graphCanvas.classList.remove('cursor-grabbing');
+                    graphCanvas.classList.add('cursor-grab');
+                }
+            });
+
+            graphCanvas.addEventListener('touchstart', (e) => {
+                if (e.touches && e.touches.length === 1) {
+                    if (tryStartDotDrag(e.touches[0].clientX, e.touches[0].clientY)) {
+                        e.preventDefault();
+                    }
+                }
+            }, { passive: false });
+
+            window.addEventListener('touchmove', (e) => {
+                if (isGraphDotDragging && e.touches && e.touches.length === 1) {
+                    handleMoveDot(e.touches[0].clientX);
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchend', () => {
+                isGraphDotDragging = false;
+            });
+
+            graphCanvas.addEventListener('mouseleave', () => {
+                const tooltip = document.getElementById('tooltip');
+                if (tooltip) tooltip.classList.add('hidden');
+            });
+        }
+
+        function setupCircleInteraction() {
+            if (!circleCanvas) return;
+
+            function handleCircleStart(e) {
+                isCircleDragging = true;
+                if (isAnimating) toggleAnimation();
+                handleCircleMove(e);
+            }
+
+            function handleCircleMove(e) {
+                if (!isCircleDragging) return;
+
+                const rect = circleCanvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                const mx = clientX - rect.left;
+                const my = clientY - rect.top;
+
+                const width = circleCanvas.clientWidth;
+                const height = circleCanvas.clientHeight;
+                const centerX = width / 2;
+                const centerY = height / 2;
+
+                const dx = mx - centerX;
+                const dy = my - centerY;
+
+                const mouseAngle = Math.atan2(-dy, dx);
+
+                const cRad = angleUnit === 'rad' ? c : c * (Math.PI / 180);
+                const currentRadX = angleUnit === 'rad' ? animX : animX * (Math.PI / 180);
+                const currentTheta = b * (currentRadX - cRad);
+
+                let diff = mouseAngle - (currentTheta % (2 * Math.PI));
+                while (diff > Math.PI) diff -= 2 * Math.PI;
+                while (diff <= -Math.PI) diff += 2 * Math.PI;
+
+                const targetTheta = currentTheta + diff;
+                const targetRadX = targetTheta / b + cRad;
+
+                animX = angleUnit === 'rad' ? targetRadX : targetRadX * (180 / Math.PI);
+
+                drawAll();
+            }
+
+            function handleCircleEnd() {
+                isCircleDragging = false;
+            }
+
+            circleCanvas.addEventListener('mousedown', handleCircleStart);
+            window.addEventListener('mousemove', handleCircleMove);
+            window.addEventListener('mouseup', handleCircleEnd);
+
+            circleCanvas.addEventListener('touchstart', handleCircleStart, { passive: true });
+            window.addEventListener('touchmove', handleCircleMove, { passive: true });
+            window.addEventListener('touchend', handleCircleEnd);
+        }
+
+        function resetCircleAngle() {
+            animX = 0;
+            drawAll();
+        }
+
+        function resetParameters() {
+            const defaults = getSavedDefaults();
+            applyState(defaults);
+            showToast('初期設定の状態にリセットしました');
+        }
+
+        function updateValues() {
+            a = parseFloat(document.getElementById('slider-a').value);
+            b = parseFloat(document.getElementById('slider-b').value);
+            c = parseFloat(document.getElementById('slider-c').value);
+            d = parseFloat(document.getElementById('slider-d').value);
+
+            if (b === 0) b = 0.01;
+
+            document.getElementById('val-a').textContent = a.toFixed(1);
+            document.getElementById('val-b').textContent = b.toFixed(2);
+            document.getElementById('val-c').textContent = angleUnit === 'rad' ? formatPiValue(c) : `${Math.round(c)}°`;
+            document.getElementById('val-d').textContent = d.toFixed(1);
+
+            renderFormulas();
+            updateProperties();
+            drawAll();
+        }
+
+        function formatPiValue(val) {
+            if (Math.abs(val) < 0.0001) return '0';
+            
+            const k = val / Math.PI;
+            const sign = k < 0 ? '-' : '';
+            const absK = Math.abs(k);
+
+            let bestP = Math.round(absK);
+            let bestQ = 1;
+            let minErr = Math.abs(absK - bestP);
+
+            for (let q = 1; q <= 36; q++) {
+                const p = Math.round(absK * q);
+                const err = Math.abs(absK - p / q);
+                if (err < 0.001) {
+                    bestP = p; bestQ = q; minErr = err;
+                    break;
+                } else if (err < minErr) {
+                    bestP = p; bestQ = q; minErr = err;
+                }
+            }
+
+            function gcd(x, y) { return y === 0 ? x : gcd(y, x % y); }
+            const g = gcd(bestP, bestQ);
+            const num = bestP / g;
+            const den = bestQ / g;
+
+            if (num === 0) return '0';
+            let piStr = num === 1 ? 'π' : `${num}π`;
+            return den === 1 ? `${sign}${piStr}` : `${sign}${piStr}/${den}`;
+        }
+
+        function formatXValue(x) {
+            if (angleUnit === 'rad') return formatPiValue(x);
+            return `${Math.round(x)}°`;
+        }
+
+        function renderFormulas() {
+            const templateLatex = `y = a \\cdot \\${currentFn}\\left(b(x - c)\\right) + d`;
+            katex.render(templateLatex, document.getElementById('standard-template-math'), { throwOnError: false });
+
+            const latexStandard = buildLatexFormula(false);
+            katex.render(latexStandard, document.getElementById('current-equation-katex'), { 
+                throwOnError: false, 
+                displayMode: true 
+            });
+
+            const latexExpanded = buildLatexFormula(true);
+            katex.render(latexExpanded, document.getElementById('expanded-equation-katex'), { throwOnError: false });
+        }
+
+        function buildLatexFormula(isExpanded) {
+            if (a === 0) return `y = ${d}`;
+            let str = "y = ";
+
+            if (a === -1) str += "-";
+            else if (a !== 1) str += `${a}`;
+
+            str += `\\${currentFn}\\left(`;
+
+            if (!isExpanded) {
+                if (c === 0) {
+                    if (b === 1) str += "x";
+                    else if (b === -1) str += "-x";
+                    else str += `${b}x`;
+                } else {
+                    let sign = c > 0 ? "-" : "+";
+                    let cDisplay = angleUnit === 'rad' ? formatPiLatex(Math.abs(c)) : `${Math.abs(Math.round(c))}^\\circ`;
+
+                    if (b === 1) str += `x ${sign} ${cDisplay}`;
+                    else if (b === -1) str += `-\\left(x ${sign} ${cDisplay}\\right)`;
+                    else str += `${b}\\left(x ${sign} ${cDisplay}\\right)`;
+                }
+            } else {
+                let bc = b * c;
+                if (b === 1) str += "x";
+                else if (b === -1) str += "-x";
+                else str += `${b}x`;
+
+                if (Math.abs(bc) > 0.001) {
+                    let sign = bc > 0 ? "-" : "+";
+                    let bcDisplay = angleUnit === 'rad' ? formatPiLatex(Math.abs(bc)) : `${Math.abs(Math.round(bc))}^\\circ`;
+                    str += ` ${sign} ${bcDisplay}`;
+                }
+            }
+
+            str += "\\right)";
+            if (d > 0) str += ` + ${d}`;
+            else if (d < 0) str += ` - ${Math.abs(d)}`;
+
+            return str;
+        }
+
+        function formatPiLatex(val) {
+            if (Math.abs(val) < 0.01) return "0";
+            const fracStr = formatPiValue(val);
+            if (fracStr.includes('/')) {
+                const parts = fracStr.split('/');
+                return `\\frac{${parts[0].replace('π', '\\pi')}}{${parts[1]}}`;
+            }
+            return fracStr.replace('π', '\\pi');
+        }
+
+        function updateProperties() {
+            if (currentFn === 'tan') {
+                const period = angleUnit === 'rad' ? Math.PI / Math.abs(b) : 180 / Math.abs(b);
+                document.getElementById('prop-period').textContent = angleUnit === 'rad' ? formatPiValue(period) : `${Math.round(period)}°`;
+                document.getElementById('prop-amplitude').textContent = "なし";
+                document.getElementById('prop-max').textContent = "∞";
+                document.getElementById('prop-min').textContent = "-∞";
+            } else {
+                const period = angleUnit === 'rad' ? (2 * Math.PI) / Math.abs(b) : 360 / Math.abs(b);
+                document.getElementById('prop-period').textContent = angleUnit === 'rad' ? formatPiValue(period) : `${Math.round(period)}°`;
+                document.getElementById('prop-amplitude').textContent = Math.abs(a).toFixed(1);
+                document.getElementById('prop-max').textContent = (d + Math.abs(a)).toFixed(1);
+                document.getElementById('prop-min').textContent = (d - Math.abs(a)).toFixed(1);
+            }
+        }
+
+        function drawAll() {
+            drawGraph();
+            if (showCircle) drawUnitCircle();
+        }
+
+        function evalBaseFn(x) {
+            const rad = angleUnit === 'rad' ? x : x * (Math.PI / 180);
+            return Math[currentFn](rad);
+        }
+
+        function evalFnByName(fnName, x) {
+            const rad = angleUnit === 'rad' ? x : x * (Math.PI / 180);
+            return Math[fnName](rad);
+        }
+
+        function evalTransformedFn(x) {
+            const rad = angleUnit === 'rad' ? x : x * (Math.PI / 180);
+            const cRad = angleUnit === 'rad' ? c : c * (Math.PI / 180);
+            return a * Math[currentFn](b * (rad - cRad)) + d;
+        }
+
+        function plotGraphCurve(fn, xMin, xMax, toScreenX, toScreenY) {
+            graphCtx.beginPath();
+            let isDrawing = false;
+            const step = (xMax - xMin) / 600;
+
+            for (let x = xMin; x <= xMax; x += step) {
+                const y = fn(x);
+                if (isNaN(y) || Math.abs(y) > 30) {
+                    isDrawing = false;
+                    continue;
+                }
+                const sx = toScreenX(x);
+                const sy = toScreenY(y);
+
+                if (!isDrawing) {
+                    graphCtx.moveTo(sx, sy);
+                    isDrawing = true;
+                } else {
+                    graphCtx.lineTo(sx, sy);
+                }
+            }
+            graphCtx.stroke();
+        }
+
+        function drawSpecialAngleGrid(xMin, xMax, width, height, toScreenX, toScreenY, showGuides) {
+            const axisYScreen = Math.min(Math.max(toScreenY(0), 18), height - 32);
+            const angles = [];
+
+            if (angleUnit === 'rad') {
+                const startK = Math.floor(xMin / (Math.PI / 12)) - 2;
+                const endK = Math.ceil(xMax / (Math.PI / 12)) + 2;
+
+                for (let k = startK; k <= endK; k++) {
+                    const val = (k * Math.PI) / 12;
+                    if (val < xMin || val > xMax) continue;
+
+                    let priority = 0;
+                    if (k % 6 === 0) priority = 1;      // pi/2, pi (90, 180 deg)
+                    else if (k % 2 === 0) priority = 1; // pi/6, pi/3 (30, 60 deg) - 高優先度化
+                    else if (k % 3 === 0) priority = 2; // pi/4 (45 deg)
+
+                    if (priority > 0) {
+                        angles.push({ val, priority, label: formatPiValue(val) });
+                    }
+                }
+            } else {
+                const startDeg = Math.floor(xMin / 15) * 15 - 30;
+                const endDeg = Math.ceil(xMax / 15) * 15 + 30;
+
+                for (let deg = startDeg; deg <= endDeg; deg += 15) {
+                    if (deg < xMin || deg > xMax) continue;
+
+                    let priority = 0;
+                    if (deg % 90 === 0) priority = 1;   // 90, 180 deg
+                    else if (deg % 30 === 0) priority = 1; // 30, 60 deg - 高優先度化
+                    else if (deg % 45 === 0) priority = 2; // 45 deg
+
+                    if (priority > 0) {
+                        angles.push({ val: deg, priority, label: `${deg}°` });
+                    }
+                }
+            }
+
+            angles.sort((a, b) => a.priority - b.priority);
+
+            // 補助線チェックがONの時のみ背景グリッドを描画
+            if (showGuides) {
+                angles.forEach(item => {
+                    const sx = toScreenX(item.val);
+                    if (sx < 0 || sx > width) return;
+
+                    graphCtx.beginPath();
+                    if (item.priority === 1) {
+                        graphCtx.strokeStyle = Math.abs(item.val) < 0.001 ? '#94a3b8' : '#e2e8f0';
+                        graphCtx.lineWidth = 1.2;
+                    } else {
+                        graphCtx.strokeStyle = '#f1f5f9';
+                        graphCtx.lineWidth = 0.8;
+                    }
+                    graphCtx.moveTo(sx, 0);
+                    graphCtx.lineTo(sx, height);
+                    graphCtx.stroke();
+                });
+            }
+
+            graphCtx.textAlign = 'center';
+
+            // すべての有名角文字ラベルを黒色で1列描画
+            const drawnLabels = [];
+            const yOffset = axisYScreen + 14;
+
+            angles.forEach(item => {
+                const sx = toScreenX(item.val);
+                if (sx < 0 || sx > width) return;
+                if (Math.abs(item.val) < 0.0001) return;
+
+                graphCtx.font = '8px sans-serif';
+                graphCtx.fillStyle = '#000000'; // 黒色統一
+
+                const textWidth = graphCtx.measureText(item.label).width;
+                const minX = sx - textWidth / 2 - 0.5;
+                const maxX = sx + textWidth / 2 + 0.5;
+
+                const isOverlapped = drawnLabels.some(l => !(maxX < l.minX || minX > l.maxX));
+
+                if (!isOverlapped) {
+                    drawnLabels.push({ minX, maxX });
+                    graphCtx.fillText(item.label, sx, yOffset);
+                }
+            });
+        }
+
+        function drawRegularGrid(xMin, xMax, width, height, toScreenX, toScreenY, showGuides) {
+            let xStep;
+            if (angleUnit === 'rad') {
+                const spanInPi = (xMax - xMin) / Math.PI;
+                if (spanInPi > 12) xStep = Math.PI * 2;
+                else if (spanInPi > 6) xStep = Math.PI;
+                else if (spanInPi > 4.2) xStep = Math.PI / 2;
+                else if (spanInPi > 2.8) xStep = Math.PI / 4;
+                else if (spanInPi > 1.8) xStep = Math.PI / 6;
+                else if (spanInPi > 0.9) xStep = Math.PI / 12;
+                else if (spanInPi > 0.4) xStep = Math.PI / 24;
+                else xStep = Math.PI / 36;
+            } else {
+                const spanInDeg = xMax - xMin;
+                if (spanInDeg > 2160) xStep = 360;
+                else if (spanInDeg > 1080) xStep = 180;
+                else if (spanInDeg > 750) xStep = 90;
+                else if (spanInDeg > 500) xStep = 45;
+                else if (spanInDeg > 320) xStep = 30;
+                else if (spanInDeg > 160) xStep = 15;
+                else if (spanInDeg > 60) xStep = 5;
+                else if (spanInDeg > 20) xStep = 2;
+                else xStep = 1;
+            }
+
+            const startXStep = Math.floor(xMin / xStep) * xStep;
+            const axisYScreen = Math.min(Math.max(toScreenY(0), 18), height - 18);
+
+            graphCtx.textAlign = 'center';
+            graphCtx.font = '10px monospace';
+
+            for (let x = startXStep; x <= xMax; x += xStep) {
+                const sx = toScreenX(x);
+                if (sx < 0 || sx > width) continue;
+
+                if (showGuides) {
+                    graphCtx.strokeStyle = Math.abs(x) < 0.001 ? '#94a3b8' : '#f1f5f9';
+                    graphCtx.beginPath();
+                    graphCtx.moveTo(sx, 0);
+                    graphCtx.lineTo(sx, height);
+                    graphCtx.stroke();
+                }
+
+                if (Math.abs(x) > 0.001) {
+                    graphCtx.fillStyle = '#000000'; // 黒色統一
+                    graphCtx.fillText(formatXValue(x), sx, axisYScreen + 14);
+                }
+            }
+        }
+
+        function drawGraph() {
+            if (!graphCanvas) return;
+            const container = document.getElementById('graph-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            graphCtx.clearRect(0, 0, width, height);
+
+            const { xMin, xMax } = getVisibleXBounds();
+            const spanY = 10 / zoomLevel;
+
+            const yMin = -spanY / 2 + offsetY;
+            const yMax = spanY / 2 + offsetY;
+
+            const toScreenX = (x) => ((x - xMin) / (xMax - xMin)) * width;
+            const toScreenY = (y) => height - ((y - yMin) / (yMax - yMin)) * height;
+
+            const showSpecial = document.getElementById('chk-special-angles') ? document.getElementById('chk-special-angles').checked : true;
+            const showGuides = document.getElementById('chk-guides').checked;
+
+            if (showSpecial) {
+                drawSpecialAngleGrid(xMin, xMax, width, height, toScreenX, toScreenY, showGuides);
+            } else {
+                drawRegularGrid(xMin, xMax, width, height, toScreenX, toScreenY, showGuides);
+            }
+
+            // Draw Y-Grid Ticks
+            const yStep = 0.5;
+            const startYStep = Math.floor(yMin / yStep) * yStep;
+            const axisXScreen = Math.min(Math.max(toScreenX(0), 28), width - 28);
+
+            graphCtx.textAlign = 'right';
+
+            for (let y = startYStep; y <= yMax; y += yStep) {
+                const sy = toScreenY(y);
+                if (sy < 0 || sy > height) continue;
+
+                if (showGuides) {
+                    graphCtx.strokeStyle = Math.abs(y) < 0.001 ? '#94a3b8' : '#f1f5f9';
+                    graphCtx.lineWidth = Math.abs(y) < 0.001 ? 1.5 : 1;
+                    graphCtx.beginPath();
+                    graphCtx.moveTo(0, sy);
+                    graphCtx.lineTo(width, sy);
+                    graphCtx.stroke();
+                }
+
+                // +/-2.5 の数値は非表示
+                const isEdgeVal = Math.abs(Math.abs(y) - 2.5) < 0.02;
+                if (Math.abs(y) > 0.001 && !isEdgeVal) {
+                    graphCtx.fillStyle = '#64748b';
+                    graphCtx.font = '10.5px monospace';
+                    graphCtx.fillText(y.toFixed(1), axisXScreen - 6, sy + 3.5);
+                }
+            }
+
+            // Draw Main X and Y Axes
+            const axisYScreen = Math.min(Math.max(toScreenY(0), 18), height - 18);
+            graphCtx.strokeStyle = '#64748b';
+            graphCtx.lineWidth = 1.5;
+
+            // x-axis
+            graphCtx.beginPath();
+            graphCtx.moveTo(0, axisYScreen);
+            graphCtx.lineTo(width, axisYScreen);
+            graphCtx.stroke();
+
+            // y-axis
+            graphCtx.beginPath();
+            graphCtx.moveTo(axisXScreen, 0);
+            graphCtx.lineTo(axisXScreen, height);
+            graphCtx.stroke();
+
+            // Origin Label
+            graphCtx.fillStyle = '#475569';
+            graphCtx.font = 'bold 11px monospace';
+            graphCtx.fillText('0', axisXScreen - 6, axisYScreen + 14);
+
+            // Base function curves (y = sin x / y = cos x)
+            const showBaseSin = document.getElementById('chk-base-sin') ? document.getElementById('chk-base-sin').checked : false;
+            const showBaseCos = document.getElementById('chk-base-cos') ? document.getElementById('chk-base-cos').checked : false;
+
+            graphCtx.lineWidth = 1.5;
+            graphCtx.setLineDash([4, 4]);
+
+            if (showBaseSin) {
+                graphCtx.strokeStyle = '#2563eb'; // 青色 (y = sin x)
+                plotGraphCurve((x) => evalFnByName('sin', x), xMin, xMax, toScreenX, toScreenY);
+            }
+
+            if (showBaseCos) {
+                graphCtx.strokeStyle = '#16a34a'; // 緑色 (y = cos x)
+                plotGraphCurve((x) => evalFnByName('cos', x), xMin, xMax, toScreenX, toScreenY);
+            }
+
+            graphCtx.setLineDash([]);
+
+            // Transformed function curve (関数に応じてテーマカラーを切替)
+            if (currentFn === 'sin') {
+                graphCtx.strokeStyle = '#2563eb'; // 青色
+            } else if (currentFn === 'cos') {
+                graphCtx.strokeStyle = '#16a34a'; // 緑色
+            } else if (currentFn === 'tan') {
+                graphCtx.strokeStyle = '#dc2626'; // 赤色
+            } else {
+                graphCtx.strokeStyle = '#4f46e5';
+            }
+            
+            graphCtx.lineWidth = 2.5;
+            plotGraphCurve((x) => evalTransformedFn(x), xMin, xMax, toScreenX, toScreenY);
+
+            // 単位円チェックがONの時のみ連動動点とガイド線を描画
+            if (showCircle) {
+                const curY = evalTransformedFn(animX);
+                const animSX = toScreenX(animX);
+                const animSY = toScreenY(curY);
+
+                if (showGuides) {
+                    graphCtx.strokeStyle = '#cbd5e1';
+                    graphCtx.lineWidth = 1;
+                    graphCtx.setLineDash([3, 3]);
+
+                    // Vertical guide
+                    graphCtx.beginPath();
+                    graphCtx.moveTo(animSX, axisYScreen);
+                    graphCtx.lineTo(animSX, animSY);
+                    graphCtx.stroke();
+
+                    // Horizontal guide
+                    graphCtx.beginPath();
+                    graphCtx.moveTo(axisXScreen, animSY);
+                    graphCtx.lineTo(animSX, animSY);
+                    graphCtx.stroke();
+
+                    graphCtx.setLineDash([]);
+                }
+
+                // Draw Orange Moving Point
+                if (animSX >= 0 && animSX <= width) {
+                    const clampedSY = Math.min(Math.max(animSY, 10), height - 10);
+
+                    graphCtx.beginPath();
+                    graphCtx.arc(animSX, clampedSY, 6, 0, Math.PI * 2);
+                    graphCtx.fillStyle = '#f97316';
+                    graphCtx.fill();
+                    graphCtx.strokeStyle = '#ffffff';
+                    graphCtx.lineWidth = 2;
+                    graphCtx.stroke();
+
+                    if (animSY < 10 || animSY > height - 10) {
+                        graphCtx.fillStyle = '#ef4444';
+                        graphCtx.font = '10px sans-serif';
+                        graphCtx.textAlign = 'center';
+                        graphCtx.fillText(animSY < 10 ? '▲' : '▼', animSX, animSY < 10 ? 22 : height - 16);
+                    }
+                }
+            }
+        }
+
+        function drawUnitCircle() {
+            if (!circleCanvas) return;
+            const container = document.getElementById('unit-circle-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            circleCtx.clearRect(0, 0, width, height);
+
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.35;
+
+            // Coordinate axes
+            circleCtx.lineWidth = 1;
+            circleCtx.strokeStyle = '#cbd5e1';
+
+            circleCtx.beginPath();
+            circleCtx.moveTo(10, centerY); circleCtx.lineTo(width - 10, centerY);
+            circleCtx.moveTo(centerX, 10); circleCtx.lineTo(centerX, height - 10);
+            circleCtx.stroke();
+
+            // Circle outline
+            circleCtx.lineWidth = 2;
+            circleCtx.strokeStyle = '#64748b';
+            circleCtx.beginPath();
+            circleCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            circleCtx.stroke();
+
+            const radX = angleUnit === 'rad' ? animX : animX * (Math.PI / 180);
+            const cRad = angleUnit === 'rad' ? c : c * (Math.PI / 180);
+            const theta = b * (radX - cRad);
+
+            const px = centerX + radius * Math.cos(theta);
+            const py = centerY - radius * Math.sin(theta);
+
+            // Radius vector
+            circleCtx.lineWidth = 2;
+            circleCtx.strokeStyle = '#6366f1';
+            circleCtx.beginPath();
+            circleCtx.moveTo(centerX, centerY);
+            circleCtx.lineTo(px, py);
+            circleCtx.stroke();
+
+            // Angle Arc
+            circleCtx.fillStyle = '#6366f120';
+            circleCtx.beginPath();
+            circleCtx.moveTo(centerX, centerY);
+            circleCtx.arc(centerX, centerY, radius * 0.25, 0, -theta, theta < 0);
+            circleCtx.closePath();
+            circleCtx.fill();
+
+            // Moving Point P
+            circleCtx.beginPath();
+            circleCtx.arc(px, py, 6, 0, Math.PI * 2);
+            circleCtx.fillStyle = '#f97316';
+            circleCtx.fill();
+            circleCtx.strokeStyle = '#ffffff';
+            circleCtx.lineWidth = 2;
+            circleCtx.stroke();
+
+            // Label text
+            circleCtx.fillStyle = '#334155';
+            circleCtx.font = '11px monospace';
+            circleCtx.textAlign = 'center';
+            const thetaDeg = Math.round((theta * 180 / Math.PI) % 360);
+            circleCtx.fillText(`θ = ${angleUnit === 'rad' ? formatPiValue(theta) : thetaDeg + '°'}`, centerX, height - 12);
+        }
+
+        function handleHoverTooltip(e) {
+            if (!graphCanvas || isDragging || !showCircle) return;
+            const rect = graphCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const container = document.getElementById('graph-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            const spanX = (angleUnit === 'rad' ? 10 * Math.PI : 1800) / zoomLevel;
+            const spanY = 10 / zoomLevel;
+
+            const xMin = -spanX / 2 - offsetX;
+            const xMax = spanX / 2 - offsetX;
+
+            const toScreenX = (x) => ((x - xMin) / (xMax - xMin)) * width;
+            const toScreenY = (y) => height - ((y - (-spanY / 2 + offsetY)) / (spanY)) * height;
+
+            const animSX = toScreenX(animX);
+            const animSY = toScreenY(evalTransformedFn(animX));
+
+            const distToDot = Math.hypot(mouseX - animSX, mouseY - animSY);
+            if (distToDot < 22 || Math.abs(mouseX - animSX) < 12) {
+                graphCanvas.style.cursor = isGraphDotDragging ? 'grabbing' : 'grab';
+            } else {
+                graphCanvas.style.cursor = isDragging ? 'grabbing' : 'grab';
+            }
+
+            const tooltip = document.getElementById('tooltip');
+            if (isGraphDotDragging) {
+                const curY = evalTransformedFn(animX);
+                tooltip.classList.remove('hidden');
+                tooltip.style.left = `${Math.min(animSX + 12, width - 110)}px`;
+                tooltip.style.top = `${Math.max(animSY - 30, 10)}px`;
+                tooltip.innerHTML = `x: ${formatXValue(animX)}<br>y: ${curY.toFixed(2)}`;
+            } else {
+                tooltip.classList.add('hidden');
+            }
+        }
+
+        function toggleAnimation() {
+            isAnimating = !isAnimating;
+            const btn = document.getElementById('btn-animate');
+            const icon = document.getElementById('icon-animate');
+
+            if (isAnimating) {
+                btn.classList.add('bg-rose-100', 'text-rose-700', 'border-rose-300');
+                btn.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
+                icon.className = "fa-solid fa-pause";
+                animate();
+            } else {
+                btn.classList.remove('bg-rose-100', 'text-rose-700', 'border-rose-300');
+                btn.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
+                icon.className = "fa-solid fa-play";
+                if (animFrameId) cancelAnimationFrame(animFrameId);
+            }
+        }
+
+        function animate() {
+            if (!isAnimating) return;
+
+            const { xMin, xMax } = getVisibleXBounds();
+            const span = xMax - xMin;
+            const step = span * 0.0035;
+
+            if (animX < xMin || animX > xMax) {
+                animX = xMin;
+            }
+
+            animX += step;
+            if (animX > xMax) {
+                animX = xMin;
+            }
+
+            drawAll();
+            animFrameId = requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+</html>
