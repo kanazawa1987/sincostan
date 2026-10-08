@@ -171,7 +171,7 @@
                         <button onclick="saveCurrentAsDefault()" title="現在のグラフやパラメータの状態を初期設定として保存します" class="text-xs text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 font-semibold">
                             <i class="fa-solid fa-bookmark text-indigo-500"></i> 今の状態で初期値保存
                         </button>
-                        <button onclick="resetParameters()" title="初期設定に戻します" class="text-xs text-slate-600 hover:text-indigo-600 transition-colors flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-md">
+                        <button onclick="resetParameters()" title="パラメータの数値のみを初期値に戻します" class="text-xs text-slate-600 hover:text-indigo-600 transition-colors flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-md">
                             <i class="fa-solid fa-rotate-left"></i> リセット
                         </button>
                         <button id="btn-clear-default" onclick="clearCustomDefault()" title="標準の初期値(y=sinx)に戻します" class="hidden text-xs text-rose-600 hover:text-rose-700 underline transition-colors px-1 py-1">
@@ -818,8 +818,22 @@
 
         function resetParameters() {
             const defaults = getSavedDefaults();
-            applyState(defaults);
-            showToast('初期設定の状態にリセットしました');
+            a = defaults.a ?? 1.0;
+            b = defaults.b ?? 1.0;
+            c = defaults.c ?? 0.0;
+            d = defaults.d ?? 0.0;
+
+            const sliderA = document.getElementById('slider-a');
+            if (sliderA) sliderA.value = a;
+            const sliderB = document.getElementById('slider-b');
+            if (sliderB) sliderB.value = b;
+            const sliderC = document.getElementById('slider-c');
+            if (sliderC) sliderC.value = c;
+            const sliderD = document.getElementById('slider-d');
+            if (sliderD) sliderD.value = d;
+
+            updateValues();
+            showToast('パラメータの数値をリセットしました');
         }
 
         function updateValues() {
